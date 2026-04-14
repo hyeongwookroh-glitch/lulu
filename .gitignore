@@ -1,0 +1,13 @@
+# Credentials & secrets
+.env
+private/
+
+# Node
+channels/node_modules/
+node_modules/
+
+# Claude Code local state
+.claude/
+
+# OS / misc
+.DS_Store

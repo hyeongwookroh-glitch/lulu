@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "lulu": {
+      "command": "node",
+      "args": ["channels/lulu-discord.mjs"]
+    }
+  }
+}
