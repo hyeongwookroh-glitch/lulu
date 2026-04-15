@@ -1,7 +1,7 @@
 @echo off
 cd /d "%~dp0"
 
-tasklist /FI "IMAGENAME eq claude.exe" 2>NUL | find /I "claude.exe" >NUL
+powershell -NoProfile -Command "if (Get-WmiObject Win32_Process -Filter \"name='claude.exe'\" | Where-Object { $_.CommandLine -like '*server:lulu*' }) { exit 0 } else { exit 1 }" >NUL 2>&1
 if not errorlevel 1 (
     echo [Lulu] Already running. Exiting.
     timeout /t 3 >nul
