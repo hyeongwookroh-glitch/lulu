@@ -10,6 +10,8 @@
    - `DISCORD_BOT_TOKEN`
    - `DISCORD_HOME_CHANNEL` (봇이 멘션 없이도 듣는 채널 ID)
 
+> **OS 참고:** 이 가이드는 macOS와 Windows 모두 지원합니다. 각 단계에서 OS별 차이가 있는 경우 별도 표시되어 있습니다.
+
 ---
 
 ## Discord Bot 생성 가이드
@@ -65,11 +67,19 @@ DISCORD_HOME_CHANNEL=실제채널ID
 
 `.claude/` 디렉토리는 gitignore 되어 있으므로 직접 생성:
 
+**macOS / Linux:**
 ```bash
 mkdir -p .claude/memory
 ```
 
-`.claude/settings.local.json` 생성:
+**Windows (PowerShell):**
+```powershell
+New-Item -ItemType Directory -Path .claude\memory -Force
+```
+
+`.claude/settings.local.json` 생성 — OS에 맞는 버전 사용:
+
+**macOS / Linux:**
 ```json
 {
   "permissions": {
@@ -124,13 +134,75 @@ mkdir -p .claude/memory
 }
 ```
 
+**Windows:**
+```json
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "WebFetch(domain:github.com)"
+    ]
+  },
+  "dangerouslySkipPermissions": true,
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -ExecutionPolicy Bypass -File hooks/session-start.ps1"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -ExecutionPolicy Bypass -File hooks/pre-compact.ps1"
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -ExecutionPolicy Bypass -File hooks/post-compact.ps1"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -ExecutionPolicy Bypass -File hooks/stop.ps1"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
 ### Step 4: Memory Directory
 
 Lulu 메모리 디렉토리 생성:
 
+**macOS / Linux:**
 ```bash
 mkdir -p ~/Documents/Lulu_Memory/session_notes/lulu
 mkdir -p ~/Documents/Lulu_Memory/inbox
+```
+
+**Windows (PowerShell):**
+```powershell
+New-Item -ItemType Directory -Path "$env:USERPROFILE\Documents\Lulu_Memory\session_notes\lulu" -Force
+New-Item -ItemType Directory -Path "$env:USERPROFILE\Documents\Lulu_Memory\inbox" -Force
 ```
 
 ### Step 5: Memory Index
@@ -146,14 +218,22 @@ mkdir -p ~/Documents/Lulu_Memory/inbox
 
 모든 설정 완료 후 테스트 실행:
 
+**macOS / Linux:**
 ```bash
 bash run-lulu.sh
+```
+
+**Windows:**
+```cmd
+run-lulu.bat
 ```
 
 정상 작동 확인:
 - `[Lulu Session Startup]` 메시지 출력
 - Discord 메시지 수신/응답 가능
-- 세션 노트 `~/Documents/Lulu_Memory/session_notes/lulu/YYYY-MM-DD.md` 생성
+- 세션 노트 생성:
+  - macOS: `~/Documents/Lulu_Memory/session_notes/lulu/YYYY-MM-DD.md`
+  - Windows: `%USERPROFILE%\Documents\Lulu_Memory\session_notes\lulu\YYYY-MM-DD.md`
 
 ---
 

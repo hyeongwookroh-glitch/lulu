@@ -5,7 +5,7 @@
 ---
 
 ## 요구사항
-- macOS
+- macOS 또는 Windows 10+
 - [Claude Code CLI](https://claude.ai/code) 설치 및 로그인
 - Node.js 22+
 
@@ -25,8 +25,14 @@ cp .env.example .env
 
 ## 실행
 
+**macOS / Linux:**
 ```bash
 bash run-lulu.sh
+```
+
+**Windows:**
+```cmd
+run-lulu.bat
 ```
 
 ## 디렉토리 구조
@@ -36,25 +42,33 @@ lulu/
 ├── CLAUDE.md               # 페르소나 (Lulu)
 ├── README.md               # 이 파일
 ├── SETUP.md                # 자동 셋업 가이드 (Discord Bot + Notion MCP)
-├── run-lulu.sh             # 자동 재시작 래퍼
+├── run-lulu.sh             # 자동 재시작 래퍼 (macOS/Linux)
+├── run-lulu.bat            # 자동 재시작 래퍼 (Windows)
 ├── .mcp-lulu.json          # MCP 서버 설정
 ├── .env                    # Discord 토큰 (gitignored)
 ├── channels/
 │   ├── discord-channel.mjs # Discord MCP 서버 코어
 │   └── lulu-discord.mjs    # Lulu 설정
 ├── hooks/
-│   ├── session-start.sh    # SessionStart
-│   ├── pre-compact.sh      # PreCompact
-│   ├── post-compact.sh     # PostCompact
-│   └── stop.sh             # Stop
+│   ├── session-start.sh    # SessionStart (macOS/Linux)
+│   ├── session-start.ps1   # SessionStart (Windows)
+│   ├── pre-compact.sh      # PreCompact (macOS/Linux)
+│   ├── pre-compact.ps1     # PreCompact (Windows)
+│   ├── post-compact.sh     # PostCompact (macOS/Linux)
+│   ├── post-compact.ps1    # PostCompact (Windows)
+│   ├── stop.sh             # Stop (macOS/Linux)
+│   └── stop.ps1            # Stop (Windows)
 └── .claude/
     └── memory/             # 도메인 지식
 ```
 
 ## 메모리 구조
 
+**macOS/Linux:** `~/Documents/Lulu_Memory/`
+**Windows:** `%USERPROFILE%\Documents\Lulu_Memory\`
+
 ```
-~/Documents/Lulu_Memory/
+Lulu_Memory/
 ├── session_notes/lulu/     # 세션 노트 (YYYY-MM-DD.md)
 ├── inbox/                  # Discord 첨부파일 다운로드
 └── checkpoint.md           # 컴팩션 복구용
