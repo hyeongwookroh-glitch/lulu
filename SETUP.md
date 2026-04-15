@@ -9,6 +9,8 @@
 3. **Discord Bot 생성** 완료 — 아래 값 확보:
    - `DISCORD_BOT_TOKEN`
    - `DISCORD_HOME_CHANNEL` (봇이 멘션 없이도 듣는 채널 ID)
+4. **Notion Integration 생성** 완료 — 아래 값 확보:
+   - `NOTION_API_KEY` (Internal Integration Secret)
 
 > **OS 참고:** 이 가이드는 macOS와 Windows 모두 지원합니다. 각 단계에서 OS별 차이가 있는 경우 별도 표시되어 있습니다.
 
@@ -18,26 +20,40 @@
 
 ### 1. Discord Developer Portal에서 Application 생성
 1. https://discord.com/developers/applications 접속
-2. "New Application" 클릭 → 이름: `Lulu`
-3. 좌측 메뉴 "Bot" 클릭
-4. "Reset Token" 클릭 → **토큰 복사** (이게 `DISCORD_BOT_TOKEN`)
+2. "새로운 애플리케이션" 클릭 → 이름: `Lulu`
+3. 좌측 메뉴 "봇" 클릭
+4. "토큰 재설정" 클릭 → **토큰 복사** (이게 `DISCORD_BOT_TOKEN`)
 
 ### 2. Bot 권한 설정
-Bot 페이지에서:
-- **Privileged Gateway Intents** 3개 모두 활성화:
-  - PRESENCE INTENT
-  - SERVER MEMBERS INTENT
-  - MESSAGE CONTENT INTENT
+봇 페이지에서:
+- **권한 있는 게이트웨이 인텐트** 3개 모두 활성화:
+  - 프레즌스 인텐트
+  - 서버 멤버 인텐트
+  - 메시지 콘텐츠 인텐트
 
 ### 3. Bot을 서버에 초대
 1. 좌측 "OAuth2" → "URL Generator"
 2. Scopes: `bot`
-3. Bot Permissions: `Send Messages`, `Read Message History`, `Add Reactions`, `Attach Files`, `Read Messages/View Channels`
+3. Bot Permissions: `메시지 보내기`, `메시지 기록 보기`, `반응 추가하기`, `파일 첨부`, `채널 보기`
 4. 생성된 URL을 복사해서 브라우저에서 열기 → 서버 선택 → 초대
 
 ### 4. 채널 ID 확인
 1. Discord 설정 → 고급 → "개발자 모드" 활성화
 2. 원하는 채널 우클릭 → "채널 ID 복사" → 이게 `DISCORD_HOME_CHANNEL`
+
+---
+
+## Notion Integration 생성 가이드
+
+### 1. Notion Integration 생성
+1. https://www.notion.so/profile/integrations 접속
+2. "New integration" → 이름: `Lulu`
+3. Capabilities: Read content, Update content, Insert content 체크
+4. **Internal Integration Secret** 복사 → 이게 `NOTION_API_KEY`
+
+### 2. Notion 페이지에 Integration 연결
+포트폴리오를 만들 Notion 페이지/DB에서:
+1. 우상단 `...` → "Connections" → `Lulu` 추가
 
 ---
 
@@ -61,6 +77,7 @@ cp .env.example .env
 ```
 DISCORD_BOT_TOKEN=실제토큰
 DISCORD_HOME_CHANNEL=실제채널ID
+NOTION_API_KEY=ntn_실제토큰
 ```
 
 ### Step 3: Claude Code Settings
@@ -142,50 +159,10 @@ run-lulu.bat
 정상 작동 확인:
 - `[Lulu Session Startup]` 메시지 출력
 - Discord 메시지 수신/응답 가능
+- Notion 연동 동작 (`notion_` 접두사 MCP 도구 사용 가능)
 - 세션 노트 생성:
   - macOS: `~/Documents/Lulu_Memory/session_notes/lulu/YYYY-MM-DD.md`
   - Windows: `%USERPROFILE%\Documents\Lulu_Memory\session_notes\lulu\YYYY-MM-DD.md`
-
----
-
-## Notion MCP 연동 (선택)
-
-포트폴리오를 Notion에 직접 작성하려면 Notion MCP를 추가 설정합니다.
-
-### 1. Notion Integration 생성
-1. https://www.notion.so/profile/integrations 접속
-2. "New integration" → 이름: `Lulu`
-3. Capabilities: Read content, Update content, Insert content 체크
-4. **Internal Integration Secret** 복사
-
-### 2. Notion 페이지에 Integration 연결
-포트폴리오를 만들 Notion 페이지/DB에서:
-1. 우상단 `...` → "Connections" → `Lulu` 추가
-
-### 3. .env에 추가
-```
-NOTION_API_KEY=ntn_실제토큰
-```
-
-### 4. MCP 설정에 Notion 추가
-`.mcp-lulu.json`을 수정:
-```json
-{
-  "mcpServers": {
-    "lulu": {
-      "command": "node",
-      "args": ["channels/lulu-discord.mjs"]
-    },
-    "notion": {
-      "command": "npx",
-      "args": ["-y", "@notionhq/notion-mcp-server"],
-      "env": {
-        "OPENAPI_MCP_HEADERS": "{\"Authorization\": \"Bearer ntn_실제토큰\", \"Notion-Version\": \"2022-06-28\"}"
-      }
-    }
-  }
-}
-```
 
 ---
 
@@ -211,6 +188,8 @@ Discord에서 파일을 보내면 자동으로 로컬에 다운로드되고 Read
 |------|------|------|
 | `MODULE_NOT_FOUND` | npm install 미완료 | `cd channels && npm install` |
 | Discord 연결 안됨 | 토큰 오류 | `.env` 토큰 재확인 |
-| 메시지 감지 안됨 | MESSAGE CONTENT Intent 미활성화 | Developer Portal → Bot → Intent 활성화 |
-| hooks 실행 안됨 | `.claude/settings.json` 누락 (clone 확인) 또는 Windows에서 PowerShell 오버라이드 필요 | Step 3 참고 |
+| 메시지 감지 안됨 | 메시지 콘텐츠 인텐트 미활성화 | Developer Portal → 봇 → 인텐트 활성화 |
+| hooks 실행 안됨 | `.claude/settings.json` 누락 또는 Windows에서 PowerShell 오버라이드 필요 | Step 3 참고 |
 | 세션 노트 에러 | 메모리 디렉토리 없음 | Step 4 재실행 |
+| 중복 실행 | `run-lulu.bat` 두 번 실행 | 기존 프로세스 종료 후 한 번만 실행 (bat 파일이 자동 차단) |
+| Notion 도구 없음 | `NOTION_API_KEY` 미설정 | `.env`에 키 추가 후 재시작 |

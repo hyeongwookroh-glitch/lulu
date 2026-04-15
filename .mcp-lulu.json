@@ -3,6 +3,10 @@
     "lulu": {
       "command": "node",
       "args": ["channels/lulu-discord.mjs"]
+    },
+    "notion": {
+      "command": "node",
+      "args": ["channels/notion-mcp.mjs"]
     }
   }
 }
