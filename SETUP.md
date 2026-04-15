@@ -77,117 +77,28 @@ mkdir -p .claude/memory
 New-Item -ItemType Directory -Path .claude\memory -Force
 ```
 
-`.claude/settings.local.json` 생성 — OS에 맞는 버전 사용:
+Hooks 설정은 `.claude/settings.json`에 이미 포함되어 있음 (clone 시 자동 적용).
+권한 설정만 `.claude/settings.local.json`에 생성:
 
-**macOS / Linux:**
 ```json
 {
-  "permissions": {
-    "allow": [
-      "Bash(npm install:*)",
-      "WebFetch(domain:github.com)"
-    ]
-  },
-  "dangerouslySkipPermissions": true,
-  "hooks": {
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash hooks/session-start.sh"
-          }
-        ]
-      }
-    ],
-    "PreCompact": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash hooks/pre-compact.sh"
-          }
-        ]
-      }
-    ],
-    "PostCompact": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash hooks/post-compact.sh"
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash hooks/stop.sh"
-          }
-        ]
-      }
-    ]
-  }
+  "dangerouslySkipPermissions": true
 }
 ```
 
-**Windows:**
-```json
-{
-  "permissions": {
-    "allow": [
-      "Bash(npm install:*)",
-      "WebFetch(domain:github.com)"
-    ]
-  },
-  "dangerouslySkipPermissions": true,
-  "hooks": {
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "powershell -ExecutionPolicy Bypass -File hooks/session-start.ps1"
-          }
-        ]
-      }
-    ],
-    "PreCompact": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "powershell -ExecutionPolicy Bypass -File hooks/pre-compact.ps1"
-          }
-        ]
-      }
-    ],
-    "PostCompact": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "powershell -ExecutionPolicy Bypass -File hooks/post-compact.ps1"
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "powershell -ExecutionPolicy Bypass -File hooks/stop.ps1"
-          }
-        ]
-      }
-    ]
-  }
-}
-```
+> **Windows 사용자:** hooks가 bash용으로 설정되어 있으므로 PowerShell 오버라이드 필요. `.claude/settings.local.json`을 아래 내용으로 생성:
+> ```json
+> {
+>   "dangerouslySkipPermissions": true,
+>   "hooks": {
+>     "SessionStart": [{ "hooks": [{ "type": "command", "command": "powershell -ExecutionPolicy Bypass -File hooks/session-start.ps1" }] }],
+>     "PreCompact": [{ "hooks": [{ "type": "command", "command": "powershell -ExecutionPolicy Bypass -File hooks/pre-compact.ps1" }] }],
+>     "PostCompact": [{ "hooks": [{ "type": "command", "command": "powershell -ExecutionPolicy Bypass -File hooks/post-compact.ps1" }] }],
+>     "Stop": [{ "hooks": [{ "type": "command", "command": "powershell -ExecutionPolicy Bypass -File hooks/stop.ps1" }] }],
+>     "PostToolUseFailure": [{ "hooks": [{ "type": "command", "command": "powershell -ExecutionPolicy Bypass -File hooks/tool-error.ps1" }] }]
+>   }
+> }
+> ```
 
 ### Step 4: Memory Directory
 
@@ -301,5 +212,5 @@ Discord에서 파일을 보내면 자동으로 로컬에 다운로드되고 Read
 | `MODULE_NOT_FOUND` | npm install 미완료 | `cd channels && npm install` |
 | Discord 연결 안됨 | 토큰 오류 | `.env` 토큰 재확인 |
 | 메시지 감지 안됨 | MESSAGE CONTENT Intent 미활성화 | Developer Portal → Bot → Intent 활성화 |
-| hooks 실행 안됨 | `.claude/settings.local.json` 미생성 | Step 3 재실행 |
+| hooks 실행 안됨 | `.claude/settings.json` 누락 (clone 확인) 또는 Windows에서 PowerShell 오버라이드 필요 | Step 3 참고 |
 | 세션 노트 에러 | 메모리 디렉토리 없음 | Step 4 재실행 |
