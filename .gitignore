@@ -8,6 +8,7 @@ node_modules/
 
 # Claude Code local state
 .claude/
+!.claude/settings.json
 
 # OS / misc
 .DS_Store
