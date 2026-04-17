@@ -5,7 +5,7 @@ cd "$(dirname "$0")"
 while true; do
   claude \
     --model opus \
-    --effort max \
+    --effort xhigh \
     --dangerously-skip-permissions \
     --strict-mcp-config --mcp-config .mcp-lulu.json \
     --dangerously-load-development-channels server:lulu
