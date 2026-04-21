@@ -1,135 +1,65 @@
 # Gemini 영상 분석 셋업 가이드 (Windows)
 
 Lulu 가 영상을 분석해서 포트폴리오 정리용 컷리스트·타임코드·태그를 뽑아주는 기능.
-Google 의 Gemini API 를 쓰기 때문에 **본인 Google 계정으로 API key 를 발급**해야 한다.
 
-> 이 가이드는 **Windows 10/11** 기준. macOS/Linux 는 `scripts/analyze-video.sh` (bash 버전) 사용.
+> 이 가이드는 **Windows 10/11** 기준. macOS/Linux 는 `scripts/analyze-video.sh` 참고.
 
 ---
 
-## 1. 사전 설치 (처음 한 번만)
+## TL;DR (친구가 직접 하는 건 하나뿐)
 
-### 1-1. FFmpeg 설치
-1. https://www.gyan.dev/ffmpeg/builds/ 접속
-2. **release essentials** zip 다운로드 (예: `ffmpeg-release-essentials.zip`)
-3. 압축 해제 → 예: `C:\ffmpeg\`
-4. **환경 변수 PATH 에 추가**:
-   - Windows 검색 → "환경 변수 편집"
-   - 사용자 변수 `Path` 편집 → 새로 만들기 → `C:\ffmpeg\bin` 추가
-5. 새 PowerShell 열어서 확인:
-   ```powershell
-   ffmpeg -version
-   ffprobe -version
-   ```
+1. **API key 발급**: https://aistudio.google.com/apikey → "Create API key" → 복사
+2. Lulu 한테 자연어로 부탁: **"영상 분석 셋업해줘"**
+   - Lulu 가 `scripts/setup-video-analysis.ps1` 을 실행해서 ffmpeg/jq/PowerShell 7 설치 + `.claude/settings.local.json` 설정까지 다 해줌.
+3. 셋업 도중 `.env` 에 `GEMINI_API_KEY=...` 채우라고 하면 복붙하고 저장.
+4. Lulu 재시작 (`run-lulu.bat` 창 닫고 다시 실행).
 
-### 1-2. jq 설치
-1. https://jqlang.github.io/jq/download/ → Windows 64-bit 링크 클릭
-2. `jq-win64.exe` 다운로드 후 `jq.exe` 로 이름 변경
-3. `C:\Windows\` 같은 PATH 폴더에 복사 (또는 `C:\ffmpeg\bin\` 같이 이미 PATH 에 있는 곳)
-4. 확인:
-   ```powershell
-   jq --version
-   ```
+끝. 이제 `영상 분석해줘 C:\영상.mp4` 같은 자연어 요청으로 사용.
 
-### 1-3. curl 확인 (보통 이미 설치됨)
-Windows 10 1803+ 부터 `curl.exe` 기본 포함. 확인:
+---
+
+## 자동 셋업 스크립트 상세 (`setup-video-analysis.ps1`)
+
+이 스크립트 한 방이면 아래가 다 처리됨 (**멱등** — 이미 된 건 스킵):
+
+1. `winget` 으로 **FFmpeg, jq, PowerShell 7** 설치 — 이미 있으면 건너뜀.
+2. `.env` 없으면 `.env.example` 복사, `GEMINI_API_KEY` 비었으면 경고 출력.
+3. `.claude/settings.local.json` 없으면 Windows hook override 템플릿 + PreToolUse 블록 함께 생성. 이미 있으면 `PreToolUse` 만 추가.
+
+수동 실행하고 싶으면:
 ```powershell
-curl.exe --version
+pwsh scripts/setup-video-analysis.ps1
+# (PowerShell 7 없으면 powershell.exe 로도 동작)
+powershell -ExecutionPolicy Bypass -File scripts/setup-video-analysis.ps1
 ```
-없다면 https://curl.se/windows/ 에서 받아 PATH 에 추가.
 
-### 1-4. PowerShell 7 권장
-wrapper 스크립트는 PowerShell 7 (pwsh) 에서 가장 잘 돌아감.
-- https://github.com/PowerShell/PowerShell/releases/latest 에서 MSI 설치
-- 확인: `pwsh --version`
-
-> Windows 기본 PowerShell 5.1 로도 동작은 하지만, 한글 인코딩·JSON 처리에서 7 이상이 안정적.
+### winget 없으면?
+Windows 10 1809 이전이거나 App Installer 누락 상태. Microsoft Store → **"앱 설치 관리자(App Installer)"** 설치 후 재실행.
 
 ---
 
-## 2. Gemini API key 발급
+## API key 발급 절차 (딱 1번)
 
-1. **Google AI Studio 접속**: https://aistudio.google.com/apikey
-2. 본인 Google 계정 로그인 (외주 수익이 있으면 결제 계정과 같은 계정 사용).
-3. **"Create API key"** 클릭 → 새 프로젝트 생성 허용.
-4. 생성된 key 복사 (한 번만 표시됨. 안전한 곳에 보관).
+1. https://aistudio.google.com/apikey 접속
+2. 본인 Google 계정 로그인 (외주 수익 있으면 결제 계정과 동일 계정 권장)
+3. **"Create API key"** 클릭 → 새 프로젝트 생성 허용
+4. 생성된 key 복사 (한 번만 표시됨)
 
 ### 요금
-- **Gemini 2.5 Flash**: 무료 티어 존재 (RPM/RPD 제한 있음). 영상 분석에 충분.
-- **Gemini 2.5 Pro**: 2026-04 기준 free tier 제한 강화 중 → 사실상 billing 활성 후 사용 가능.
-- 평소엔 Flash 로만 돌려도 포폴 컷리스트 품질에 문제 없음.
+- **Gemini 2.5 Flash**: 무료 티어 (RPM/RPD 제한 有). 영상 분석에 충분.
+- **Gemini 2.5 Pro**: 2026-04 기준 free tier 축소 → 사실상 billing 활성 필요.
+- 평소엔 Flash 로 충분. Pro 는 `-Model pro` 로 명시할 때만 쓰임.
 
 ---
 
-## 3. `.env` 파일에 key 등록
+## 일상 사용
 
-`lulu` 폴더의 `.env` 파일을 메모장 또는 VS Code 로 열어서 아래 줄 추가:
-
-```
-GEMINI_API_KEY=발급받은_key_여기에_붙여넣기
-```
-
-`.env` 가 아직 없으면 `.env.example` 을 복사:
-```powershell
-Copy-Item .env.example .env
-```
-
-> `.env` 는 `.gitignore` 되어 있어서 git 에 올라가지 않음. 안심하고 저장.
-
-저장 후 **Lulu 재시작** (`run-lulu.bat` 을 닫고 다시 실행) — 환경 변수는 재시작해야 반영됨.
-
----
-
-## 4. PreToolUse hook 등록
-
-`hooks\pre-tool-use.ps1` 이 원본 영상 업로드·wrapper 우회를 차단한다. `.claude\settings.local.json` 에 아래 `PreToolUse` 블록이 있어야 동작.
-
-`.claude\settings.local.json` 전체 예시 (기존 Windows 오버라이드에 **PreToolUse 한 블록 추가**):
-
-```json
-{
-  "dangerouslySkipPermissions": true,
-  "hooks": {
-    "SessionStart": [{ "hooks": [{ "type": "command", "command": "powershell -ExecutionPolicy Bypass -File hooks/session-start.ps1" }] }],
-    "PreCompact":   [{ "hooks": [{ "type": "command", "command": "powershell -ExecutionPolicy Bypass -File hooks/pre-compact.ps1" }] }],
-    "PostCompact":  [{ "hooks": [{ "type": "command", "command": "powershell -ExecutionPolicy Bypass -File hooks/post-compact.ps1" }] }],
-    "Stop":         [{ "hooks": [{ "type": "command", "command": "powershell -ExecutionPolicy Bypass -File hooks/stop.ps1" }] }],
-    "PreToolUse":   [{ "hooks": [{ "type": "command", "command": "powershell -ExecutionPolicy Bypass -File hooks/pre-tool-use.ps1" }] }],
-    "PostToolUseFailure": [{ "hooks": [{ "type": "command", "command": "powershell -ExecutionPolicy Bypass -File hooks/tool-error.ps1" }] }]
-  }
-}
-```
-
-이미 다른 항목이 있다면 `PreToolUse` 한 줄만 추가하면 된다.
-
----
-
-## 5. 동작 테스트
-
-짧은 테스트 영상 하나 준비 (30초~2분 권장). PowerShell 에서:
-
-```powershell
-pwsh scripts/analyze-video.ps1 C:\Users\<내이름>\Desktop\테스트영상.mp4
-```
-
-정상이면 다음 4단계가 순차적으로 출력됨:
-1. `[1/4] 프록시 인코딩` — ffmpeg 가 저해상도 사본 생성 (`lulu-proxy\테스트영상\proxy.mp4`)
-2. `[2/4] 분할 불필요` (2시간 미만) 또는 `1800s 단위 분할`
-3. `[3/4] 업로드 + 분석` — Gemini 에 업로드 후 분석
-4. `[4/4] 결과 출력` — JSON 으로 컷리스트 출력
-
-분석 종료 후 Gemini 에 올린 파일은 자동 삭제됨 (20GB 프로젝트 쿼터 방지).
-
----
-
-## 6. 일상 사용 패턴
-
-### 포트폴리오 정리
+### 포트폴리오 정리 (기본)
 ```powershell
 pwsh scripts/analyze-video.ps1 C:\Videos\포폴\편집본.mp4 > 편집본_분석.json
 ```
 
-### 색감·표정 디테일 판단용 (더 높은 해상도)
+### 색감·표정 디테일용 (해상도 업)
 ```powershell
 pwsh scripts/analyze-video.ps1 C:\Videos\포폴\색보정본.mp4 -Preset review
 ```
@@ -138,7 +68,7 @@ pwsh scripts/analyze-video.ps1 C:\Videos\포폴\색보정본.mp4 -Preset review
 ```powershell
 pwsh scripts/analyze-video.ps1 C:\Videos\client\고객사A\러프컷.mp4 -ClientFootage
 ```
-> 경로에 `\client\` 포함된 영상은 `-ClientFootage` 플래그 없으면 거부됨. 업로드 전 고객 동의 확인.
+> 경로에 `\client\` 포함이면 `-ClientFootage` 없을 시 거부. 업로드 전 고객 동의 확인.
 
 ### 커스텀 프롬프트
 ```powershell
@@ -152,24 +82,23 @@ pwsh scripts/analyze-video.ps1 C:\Videos\영상.mp4 -Model pro
 
 ---
 
-## 7. 자주 나오는 에러
+## 자주 나오는 에러
 
 | 에러 메시지 | 원인 | 해결 |
 |---|---|---|
 | `GEMINI_API_KEY 환경변수 미설정` | `.env` 에 key 없거나 Lulu 재시작 안 함 | `.env` 확인 후 `run-lulu.bat` 재실행 |
-| `필수 명령어 없음: ffmpeg` | ffmpeg PATH 미등록 | 1-1 재확인, 새 PowerShell 창에서 `ffmpeg -version` 테스트 |
-| `필수 명령어 없음: jq` | jq PATH 미등록 | 1-2 참고 |
+| `필수 명령어 없음: ffmpeg` | winget 설치 후 PATH 갱신 전 | Lulu 재시작. 그래도 안 되면 새 PowerShell 열고 `ffmpeg -version` 테스트 |
 | `업로드 실패 응답` / HTTP 403 | API key 무효 또는 billing 필요한 모델 호출 | Flash 로 재시도, key 재발급 |
-| `429 Too Many Requests` | 무료 티어 RPM/RPD 초과 | 몇 분 대기 후 재시도. 자주 나면 billing 활성 검토 |
+| `429 Too Many Requests` | 무료 티어 RPM/RPD 초과 | 몇 분 대기 후 재시도 |
 | `Gemini 처리 실패: FAILED` | 영상 포맷 이슈 | ffmpeg 로 mp4 재인코딩 후 재시도 |
-| `이 스크립트는 시스템에서 실행되지 않도록 설정` | PS 실행 정책 | `pwsh -ExecutionPolicy Bypass -File scripts/analyze-video.ps1 ...` 로 우회 |
-| hook 이 동작 안 함 | `.claude\settings.local.json` 의 PreToolUse 누락 | 4번 섹션 재확인 |
+| `이 스크립트는 시스템에서 실행되지 않도록 설정` | PS 실행 정책 | `pwsh -ExecutionPolicy Bypass -File scripts/analyze-video.ps1 ...` |
+| hook 동작 안 함 | `.claude\settings.local.json` 의 PreToolUse 누락 | `pwsh scripts/setup-video-analysis.ps1` 재실행 |
 
 ---
 
-## 8. 주의사항
+## 주의사항
 
-- **원본 업로드 절대 안 함**: wrapper 가 항상 ffmpeg 프록시(저해상도 사본) 만 업로드. 원본은 로컬에만 유지.
-- **48시간 TTL**: Gemini 에 올린 파일은 48시간 지나면 자동 삭제됨 (wrapper 는 즉시 cleanup).
-- **고객 영상**: Google 서버로 올라감. 외주 고객 영상은 반드시 사전 동의 확보 후 `-ClientFootage` 사용.
-- **생성 파일 위치**: 프록시는 `lulu-proxy\<영상명>\`, 분할본은 `lulu-segment\<영상명>\`, 모두 `.gitignore` 됨. 디스크 용량 신경 쓰이면 작업 완료 후 폴더째 삭제.
+- **원본 업로드 절대 안 함**: wrapper 가 항상 ffmpeg 프록시(저해상도 사본) 만 업로드. 원본은 로컬에만.
+- **48시간 TTL**: Gemini 에 올린 파일은 48시간 후 자동 삭제 (wrapper 는 즉시 cleanup).
+- **고객 영상**: Google 서버로 올라감. 사전 동의 확보 후 `-ClientFootage` 사용.
+- **생성 파일**: `lulu-proxy\<영상명>\`, `lulu-segment\<영상명>\` (전부 `.gitignore` 됨). 디스크 여유 없으면 작업 후 폴더째 삭제.

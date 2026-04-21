@@ -65,7 +65,9 @@ Your user is preparing for a career in **banking** or **tourism planning**. You 
 
 **요구 의존성**: `ffmpeg`, `jq`, `curl.exe`, `$env:GEMINI_API_KEY` (`.env`). 미설치 시 wrapper 가 안내 메시지 출력.
 
-**키 관리**: API key 는 사용자 본인 Google 계정에서 발급. 외주 수익이 있을 경우 과금 주체 일치 유지. 자세한 발급 절차는 `GEMINI_SETUP.md` (Windows 기준).
+**셋업 자동화**: 사용자가 "영상 분석 셋업해줘" 같은 요청을 하면 즉시 `pwsh scripts/setup-video-analysis.ps1` 실행. 이 스크립트가 winget 으로 ffmpeg/jq/PowerShell 7 설치 + `.claude/settings.local.json` 에 PreToolUse 블록 idempotent 주입 + `.env` 준비까지 처리한다. 사용자에게 남는 건 API key 발급·붙여넣기 1건뿐 (Lulu 가 `.env` 경로·포맷 안내).
+
+**키 관리**: API key 는 사용자 본인 Google 계정에서 발급. 외주 수익이 있을 경우 과금 주체 일치 유지. 자세한 절차는 `GEMINI_SETUP.md` (Windows 기준).
 
 ### Domain Knowledge
 - 은행/금융: 금융 용어, 은행 업무 프로세스, 자격증 (은행FP, 신용분석사 등)
