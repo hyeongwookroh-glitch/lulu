@@ -110,12 +110,34 @@ if (-not (Test-Path -LiteralPath $LocalSettings)) {
     if ($content -match '"PreToolUse"') {
         Write-OK "PreToolUse 이미 존재 — 스킵"
     } else {
-        Write-Warn "settings.local.json 이 이미 있는데 PreToolUse 가 없음."
-        Write-Host "    수동 병합 필요 — 아래 블록을 hooks 안에 추가:"
-        Write-Host ""
-        Write-Host '    "PreToolUse": [{ "hooks": [{ "type": "command", "command": "powershell -ExecutionPolicy Bypass -File hooks/pre-tool-use.ps1" }] }]' -ForegroundColor DarkGray
-        Write-Host ""
-        Write-Host "    파일 경로: $LocalSettings"
+        # 기존 JSON 파싱 → hooks 객체에 PreToolUse 블록 주입 → 재직렬화
+        try {
+            $backup = "$LocalSettings.bak"
+            Copy-Item -LiteralPath $LocalSettings -Destination $backup -Force
+            $obj = $content | ConvertFrom-Json
+            if (-not $obj.PSObject.Properties.Name.Contains("hooks")) {
+                $obj | Add-Member -NotePropertyName "hooks" -NotePropertyValue ([PSCustomObject]@{}) -Force
+            }
+            $preToolUse = @(
+                [PSCustomObject]@{
+                    hooks = @(
+                        [PSCustomObject]@{
+                            type    = "command"
+                            command = "powershell -ExecutionPolicy Bypass -File hooks/pre-tool-use.ps1"
+                        }
+                    )
+                }
+            )
+            $obj.hooks | Add-Member -NotePropertyName "PreToolUse" -NotePropertyValue $preToolUse -Force
+            $obj | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $LocalSettings -Encoding UTF8
+            Write-OK "PreToolUse 자동 주입 (백업: $backup)"
+        } catch {
+            Write-Warn "자동 주입 실패 ($($_.Exception.Message)). 수동 병합 필요:"
+            Write-Host ""
+            Write-Host '    "PreToolUse": [{ "hooks": [{ "type": "command", "command": "powershell -ExecutionPolicy Bypass -File hooks/pre-tool-use.ps1" }] }]' -ForegroundColor DarkGray
+            Write-Host ""
+            Write-Host "    파일 경로: $LocalSettings"
+        }
     }
 }
 
