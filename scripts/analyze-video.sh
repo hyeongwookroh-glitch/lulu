@@ -126,7 +126,9 @@ cleanup() {
     echo "[cleanup] Gemini 업로드 파일 삭제 중..." >&2
     while read -r name; do
       [[ -z "$name" ]] && continue
-      curl -sS -X DELETE "https://generativelanguage.googleapis.com/v1beta/${name}?key=${GEMINI_API_KEY}" >/dev/null || true
+      curl -sS -X DELETE \
+        -H "x-goog-api-key: ${GEMINI_API_KEY}" \
+        "https://generativelanguage.googleapis.com/v1beta/${name}" >/dev/null || true
     done < "$UPLOADED_NAMES_FILE"
   fi
 }
@@ -171,13 +173,14 @@ upload_file() {
   local headers_file
   headers_file=$(mktemp)
   curl -sS -D "$headers_file" -o /dev/null \
+    -H "x-goog-api-key: ${GEMINI_API_KEY}" \
     -H "X-Goog-Upload-Protocol: resumable" \
     -H "X-Goog-Upload-Command: start" \
     -H "X-Goog-Upload-Header-Content-Length: ${size}" \
     -H "X-Goog-Upload-Header-Content-Type: ${mime}" \
     -H "Content-Type: application/json" \
     -d "$start_json" \
-    "https://generativelanguage.googleapis.com/upload/v1beta/files?key=${GEMINI_API_KEY}"
+    "https://generativelanguage.googleapis.com/upload/v1beta/files"
   local upload_url
   upload_url=$(awk -F': ' 'tolower($1)=="x-goog-upload-url"{print $2}' "$headers_file" | tr -d '\r\n')
   rm -f "$headers_file"
@@ -204,7 +207,9 @@ upload_file() {
   # ACTIVE 상태 폴링 (영상은 처리 시간 걸림)
   for _ in $(seq 1 60); do
     local state
-    state=$(curl -sS "https://generativelanguage.googleapis.com/v1beta/${fname}?key=${GEMINI_API_KEY}" | jq -r '.state')
+    state=$(curl -sS \
+      -H "x-goog-api-key: ${GEMINI_API_KEY}" \
+      "https://generativelanguage.googleapis.com/v1beta/${fname}" | jq -r '.state')
     if [[ "$state" == "ACTIVE" ]]; then break; fi
     if [[ "$state" == "FAILED" ]]; then echo "Gemini 처리 실패: $fname" >&2; return 1; fi
     sleep 2
@@ -225,9 +230,10 @@ call_gemini() {
     }]
   }')
   curl -sS -X POST \
+    -H "x-goog-api-key: ${GEMINI_API_KEY}" \
     -H "Content-Type: application/json" \
     -d "$payload" \
-    "https://generativelanguage.googleapis.com/v1beta/models/${MODEL_ID}:generateContent?key=${GEMINI_API_KEY}" \
+    "https://generativelanguage.googleapis.com/v1beta/models/${MODEL_ID}:generateContent" \
     | jq -r '.candidates[0].content.parts[0].text // empty'
 }
 

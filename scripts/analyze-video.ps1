@@ -106,7 +106,7 @@ function Invoke-Cleanup {
         if ($names) {
             [Console]::Error.WriteLine("[cleanup] Gemini 업로드 파일 삭제 중...")
             foreach ($n in $names) {
-                & curl.exe -sS -X DELETE "https://generativelanguage.googleapis.com/v1beta/${n}?key=$env:GEMINI_API_KEY" 2>$null | Out-Null
+                & curl.exe -sS -X DELETE -H "x-goog-api-key: $env:GEMINI_API_KEY" "https://generativelanguage.googleapis.com/v1beta/${n}" 2>$null | Out-Null
             }
         }
     }
@@ -147,13 +147,14 @@ try {
 
         $headersFile = New-TemporaryFile
         & curl.exe -sS -D $headersFile.FullName -o NUL `
+            -H "x-goog-api-key: $env:GEMINI_API_KEY" `
             -H "X-Goog-Upload-Protocol: resumable" `
             -H "X-Goog-Upload-Command: start" `
             -H "X-Goog-Upload-Header-Content-Length: $size" `
             -H "X-Goog-Upload-Header-Content-Type: video/mp4" `
             -H "Content-Type: application/json" `
             -d $startBody `
-            "https://generativelanguage.googleapis.com/upload/v1beta/files?key=$env:GEMINI_API_KEY"
+            "https://generativelanguage.googleapis.com/upload/v1beta/files"
 
         $headerLines = Get-Content -LiteralPath $headersFile.FullName
         Remove-Item -LiteralPath $headersFile.FullName -ErrorAction SilentlyContinue
@@ -167,12 +168,13 @@ try {
         }
         if (-not $uploadUrl) { throw "업로드 URL 획득 실패: $Path" }
 
-        $metaJson = & curl.exe -sS -X POST `
+        $metaRaw = & curl.exe -sS -X POST `
             -H "Content-Length: $size" `
             -H "X-Goog-Upload-Offset: 0" `
             -H "X-Goog-Upload-Command: upload, finalize" `
             --data-binary "@$Path" `
             $uploadUrl
+        $metaJson = ($metaRaw | Out-String).Trim()
         $meta = $metaJson | ConvertFrom-Json
         $fname = $meta.file.name
         if (-not $fname) { throw "업로드 실패 응답: $metaJson" }
@@ -180,7 +182,8 @@ try {
 
         # ACTIVE 폴링
         for ($i=0; $i -lt 60; $i++) {
-            $stateJson = & curl.exe -sS "https://generativelanguage.googleapis.com/v1beta/${fname}?key=$env:GEMINI_API_KEY"
+            $stateRaw = & curl.exe -sS -H "x-goog-api-key: $env:GEMINI_API_KEY" "https://generativelanguage.googleapis.com/v1beta/${fname}"
+            $stateJson = ($stateRaw | Out-String).Trim()
             $state = ($stateJson | ConvertFrom-Json).state
             if ($state -eq "ACTIVE") { break }
             if ($state -eq "FAILED") { throw "Gemini 처리 실패: $fname" }
@@ -200,11 +203,13 @@ try {
         } | ConvertTo-Json -Depth 10 -Compress
         $tempBody = New-TemporaryFile
         [System.IO.File]::WriteAllText($tempBody.FullName, $payload, [System.Text.Encoding]::UTF8)
-        $resp = & curl.exe -sS -X POST `
+        $respRaw = & curl.exe -sS -X POST `
+            -H "x-goog-api-key: $env:GEMINI_API_KEY" `
             -H "Content-Type: application/json" `
             -d "@$($tempBody.FullName)" `
-            "https://generativelanguage.googleapis.com/v1beta/models/${ModelId}:generateContent?key=$env:GEMINI_API_KEY"
+            "https://generativelanguage.googleapis.com/v1beta/models/${ModelId}:generateContent"
         Remove-Item -LiteralPath $tempBody.FullName -ErrorAction SilentlyContinue
+        $resp = ($respRaw | Out-String).Trim()
         $parsed = $resp | ConvertFrom-Json
         return $parsed.candidates[0].content.parts[0].text
     }
