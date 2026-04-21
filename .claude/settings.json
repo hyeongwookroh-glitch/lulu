@@ -40,6 +40,16 @@
         ]
       }
     ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash hooks/pre-tool-use.sh"
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "hooks": [

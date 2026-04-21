@@ -10,5 +10,10 @@ node_modules/
 .claude/
 !.claude/settings.json
 
+# Video analysis artifacts (proxies, segments, Gemini file_id cache)
+lulu-proxy/
+lulu-segment/
+.gemini-files/
+
 # OS / misc
 .DS_Store

@@ -11,8 +11,12 @@
    - `DISCORD_HOME_CHANNEL` (봇이 멘션 없이도 듣는 채널 ID)
 4. **Notion Integration 생성** 완료 — 아래 값 확보:
    - `NOTION_API_KEY` (Internal Integration Secret)
+5. **(선택) Gemini 영상 분석** 사용 시 — 별도 가이드 `GEMINI_SETUP.md` 참고 (Windows 기준):
+   - `GEMINI_API_KEY` (Google AI Studio)
+   - `ffmpeg`, `jq`, PowerShell 7 설치 (macOS: `brew install ffmpeg jq`)
 
 > **OS 참고:** 이 가이드는 macOS와 Windows 모두 지원합니다. 각 단계에서 OS별 차이가 있는 경우 별도 표시되어 있습니다.
+> **영상 분석**: Windows 는 `scripts/analyze-video.ps1`, macOS/Linux 는 `scripts/analyze-video.sh` 사용.
 
 ---
 
@@ -78,6 +82,7 @@ cp .env.example .env
 DISCORD_BOT_TOKEN=실제토큰
 DISCORD_HOME_CHANNEL=실제채널ID
 NOTION_API_KEY=ntn_실제토큰
+GEMINI_API_KEY=실제키     # (선택) 영상 분석 쓸 때만
 ```
 
 ### Step 3: Claude Code Settings
@@ -112,6 +117,7 @@ Hooks 설정은 `.claude/settings.json`에 이미 포함되어 있음 (clone 시
 >     "PreCompact": [{ "hooks": [{ "type": "command", "command": "powershell -ExecutionPolicy Bypass -File hooks/pre-compact.ps1" }] }],
 >     "PostCompact": [{ "hooks": [{ "type": "command", "command": "powershell -ExecutionPolicy Bypass -File hooks/post-compact.ps1" }] }],
 >     "Stop": [{ "hooks": [{ "type": "command", "command": "powershell -ExecutionPolicy Bypass -File hooks/stop.ps1" }] }],
+>     "PreToolUse": [{ "hooks": [{ "type": "command", "command": "powershell -ExecutionPolicy Bypass -File hooks/pre-tool-use.ps1" }] }],
 >     "PostToolUseFailure": [{ "hooks": [{ "type": "command", "command": "powershell -ExecutionPolicy Bypass -File hooks/tool-error.ps1" }] }]
 >   }
 > }
@@ -193,3 +199,4 @@ Discord에서 파일을 보내면 자동으로 로컬에 다운로드되고 Read
 | 세션 노트 에러 | 메모리 디렉토리 없음 | Step 4 재실행 |
 | 중복 실행 | `run-lulu.bat` 두 번 실행 | 기존 프로세스 종료 후 한 번만 실행 (bat 파일이 자동 차단) |
 | Notion 도구 없음 | `NOTION_API_KEY` 미설정 | `.env`에 키 추가 후 재시작 |
+| 영상 분석 실패 / 차단 메시지 | wrapper 우회 시도, ffmpeg/jq 미설치, API key 미설정 | `GEMINI_SETUP.md` 참고 |

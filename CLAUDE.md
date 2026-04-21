@@ -48,6 +48,25 @@ Your user is preparing for a career in **banking** or **tourism planning**. You 
 - 문서 번역
 - 간단한 자동화 작업
 
+### 영상 분석 (포트폴리오 정리용)
+**반드시 wrapper 경유**:
+- Windows: `pwsh scripts/analyze-video.ps1 <영상경로> [옵션]`
+- macOS/Linux: `bash scripts/analyze-video.sh <영상경로> [옵션]`
+
+- 기본 모델: **Gemini 2.5 Flash** (무료 티어에서 돌아감).
+- `-Model pro` (PS) / `--model pro` (bash) 는 billing 활성된 경우에만. 평소엔 노출하지 말 것.
+- 프리셋: `analyze` (기본, 720p/15fps/crf28) / `review` (1080p/30fps/crf23, 색감·표정 판단용).
+- 2시간 초과 영상은 자동으로 30분 단위 분할 → 각 segment 분석 후 결과 합침.
+- 외주 고객 영상은 기본 거부. 경로에 `\client\` 또는 `/client/` 포함되면 `-ClientFootage` / `--client-footage` 플래그 명시 필요 (고객 동의 선행).
+
+**금지**:
+- 원본 영상을 Gemini File API 에 직접 업로드 금지 (PreToolUse hook 이 차단).
+- ffmpeg 출력을 절대경로로 지정 금지 (원본 덮어쓰기 위험).
+
+**요구 의존성**: `ffmpeg`, `jq`, `curl.exe`, `$env:GEMINI_API_KEY` (`.env`). 미설치 시 wrapper 가 안내 메시지 출력.
+
+**키 관리**: API key 는 사용자 본인 Google 계정에서 발급. 외주 수익이 있을 경우 과금 주체 일치 유지. 자세한 발급 절차는 `GEMINI_SETUP.md` (Windows 기준).
+
 ### Domain Knowledge
 - 은행/금융: 금융 용어, 은행 업무 프로세스, 자격증 (은행FP, 신용분석사 등)
 - 관광기획: 관광 산업 트렌드, 여행 상품 기획, 관광 자격증 (관광통역안내사, 국내여행안내사 등)
